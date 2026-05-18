@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.campus.login</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <!-- ↓ campus-login.sh の絶対パスに書き換えてください -->
+        <string>/Users/YOUR_USERNAME/path/to/mac/campus-login.sh</string>
+    </array>
+
+    <!-- /etc/resolv.conf が変化したとき（ネットワーク切替時）に実行 -->
+    <key>WatchPaths</key>
+    <array>
+        <string>/etc/resolv.conf</string>
+    </array>
+
+    <!-- ログイン時にも一度実行 -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/campus-login.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/campus-login.log</string>
+</dict>
+</plist>
