@@ -15,7 +15,6 @@ Mac / Linux（bash）と Windows（PowerShell）に対応しています。
 │   ├── campus-login.ps1         # 自動ログイン
 │   ├── check-login-form.ps1     # フォームフィールド確認
 │   └── setup-task.ps1           # タスクスケジューラ登録スクリプト
-├── mock-server.py               # オフラインテスト用モックサーバー
 ├── .env.example                 # 認証情報のサンプル
 └── .env                         # 認証情報（非公開・gitignore済み）
 ```
@@ -119,54 +118,7 @@ rm ~/Library/LaunchAgents/com.campus.login.plist
 
 **PowerShell から登録する（管理者権限不要）**
 
-PowerShell を開き、以下を実行します（パスは環境に合わせて変更）。
-
-```powershell
-$scriptPath = "C:\path\to\windows\campus-login.ps1"
-
-$xml = @"
-<?xml version="1.0" encoding="UTF-16"?>
-<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
-  <Triggers>
-    <LogonTrigger>
-      <Enabled>true</Enabled>
-      <UserId>$env:USERDOMAIN\$env:USERNAME</UserId>
-    </LogonTrigger>
-    <EventTrigger>
-      <Enabled>true</Enabled>
-      <Subscription>&lt;QueryList&gt;&lt;Query Id="0" Path="Microsoft-Windows-NetworkProfile/Operational"&gt;&lt;Select Path="Microsoft-Windows-NetworkProfile/Operational"&gt;*[System[EventID=10000]]&lt;/Select&gt;&lt;/Query&gt;&lt;/QueryList&gt;</Subscription>
-      <Delay>PT10S</Delay>
-    </EventTrigger>
-  </Triggers>
-  <Principals>
-    <Principal id="Author">
-      <UserId>$env:USERDOMAIN\$env:USERNAME</UserId>
-      <LogonType>InteractiveToken</LogonType>
-      <RunLevel>LeastPrivilege</RunLevel>
-    </Principal>
-  </Principals>
-  <Settings>
-    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
-    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
-    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
-    <ExecutionTimeLimit>PT5M</ExecutionTimeLimit>
-    <Enabled>true</Enabled>
-  </Settings>
-  <Actions>
-    <Exec>
-      <Command>powershell.exe</Command>
-      <Arguments>-ExecutionPolicy Bypass -WindowStyle Hidden -File "$scriptPath"</Arguments>
-    </Exec>
-  </Actions>
-</Task>
-"@
-
-$xmlPath = "$env:TEMP\campus-login-task.xml"
-$xml | Out-File $xmlPath -Encoding Unicode
-Register-ScheduledTask -TaskName "campus-login" -Xml (Get-Content $xmlPath -Raw) -Force
-```
-
-または `windows/setup-task.ps1` を PowerShell から直接実行しても登録できます。
+`windows/setup-task.ps1` を PowerShell から実行します。
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\windows\setup-task.ps1
