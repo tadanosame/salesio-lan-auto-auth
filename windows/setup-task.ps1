@@ -1,4 +1,4 @@
-# タスクスケジューラへの登録スクリプト
+﻿# タスクスケジューラへの登録スクリプト
 
 $scriptPath = Join-Path $PSScriptRoot "campus-login.ps1"
 $scriptPath = (Resolve-Path $scriptPath).Path
