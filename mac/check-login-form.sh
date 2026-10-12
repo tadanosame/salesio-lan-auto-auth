@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 学内ネットワーク認証フォームのフィールド名確認スクリプト（Mac / Linux 用）
 
-URL="http://172.30.0.1/EWA/index.html"
+URL="http://172.30.0.1/login.html"
 
 echo "=== Form Info ==="
 

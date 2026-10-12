@@ -1,4 +1,4 @@
-﻿$url = "http://172.30.0.1/EWA/index.html"
+﻿$url = "http://172.30.0.1/login.html"
 
 try {
     $response = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 10

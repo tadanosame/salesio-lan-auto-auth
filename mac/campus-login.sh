@@ -2,11 +2,11 @@
 # 学内ネットワーク自動認証スクリプト（Mac / Linux 用）
 # 初回: check-login-form.sh を実行してフィールド名を確認し、下記を修正してください
 
-LOGIN_URL="${LOGIN_URL:-http://172.30.0.1/EWA/index.html}"
+LOGIN_URL="${LOGIN_URL:-http://172.30.0.1/login.html}"
 
 # フィールド名（check-login-form.sh の出力に合わせて変更してください）
-USER_FIELD="user"
-PASS_FIELD="pass"
+USER_FIELD="uid"
+PASS_FIELD="pwd"
 
 # .env ファイルから認証情報を読み込む（スクリプトと同階層 → 親ディレクトリの順で探す）
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

@@ -1,9 +1,9 @@
 ﻿# 学内ネットワーク自動認証スクリプト
 # 初回: check-login-form.ps1 を実行してフィールド名を確認し、下記を修正してください
 
-$LoginUrl = "http://172.30.0.1/EWA/index.html"
-$UserField = "user"
-$PassField = "pass"
+$LoginUrl = "http://172.30.0.1/login.html"
+$UserField = "uid"
+$PassField = "pwd"
 
 # .env ファイルから認証情報を読み込む（スクリプトと同階層 → 親ディレクトリの順で探す）
 $EnvFile = Join-Path $PSScriptRoot ".env"
