@@ -187,7 +187,12 @@ try {
     } elseif ($due) {
         Write-Log "前回ログインから $ReloginHours 時間経過。先回りして再ログインします。" "Cyan"
     } else {
-        Write-Log "オフラインを検知。ログアウト→再ログインします。" "Cyan"
+        if ($last) {
+            $elapsed = (Get-Date) - $last
+            Write-Log ("オフラインを検知（前回ログインから {0}時間{1}分）。ログアウト→再ログインします。" -f [math]::Floor($elapsed.TotalHours), $elapsed.Minutes) "Cyan"
+        } else {
+            Write-Log "オフラインを検知。ログアウト→再ログインします。" "Cyan"
+        }
     }
 
     # セッションが残ったままだと再ログインできないため、先にログアウトする

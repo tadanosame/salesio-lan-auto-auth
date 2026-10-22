@@ -124,6 +124,8 @@ rm ~/Library/LaunchAgents/com.campus.login.plist
 
 また、このスクリプトでログインしてから **11時間** たつと、通信が切れる前に先回りしてログアウト→再ログインします（約12時間でセッションが切れるため）。時間は `.env` の `RELOGIN_HOURS` で変えられます（`0` で無効）。
 
+セッションが実際に何時間で切れるかは、ログの「オフラインを検知（前回ログインから ○時間○分）」で確認できます。わかったら `RELOGIN_HOURS` をそれより少し短い値にしてください。
+
 実行ログは `%LOCALAPPDATA%\campus-login\campus-login.log` に出力されます。
 
 タスクは `windows/run-hidden.js` を `wscript.exe` で起動し、そこから PowerShell を非表示で実行します（`powershell.exe` を直接起動すると、実行のたびに一瞬ウィンドウが表示されるため）。
