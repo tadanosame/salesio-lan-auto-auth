@@ -115,6 +115,13 @@ rm ~/Library/LaunchAgents/com.campus.login.plist
 |---|---|
 | ログオン時 | Windows にサインインしたとき |
 | ネットワーク接続時 | Wi-Fi が切れて再接続したとき（10秒後） |
+| 定期チェック（5分ごと） | Wi-Fi はつながったまま認証セッションだけ切れたとき |
+
+定期チェックでは、まず `http://www.msftconnecttest.com/connecttest.txt` に HTTP でアクセスして、インターネットに出られるかを判定します。出られる場合は何もせず終了します。学内LAN外（認証サーバーに届かない）の場合も何もしません。
+
+実行ログは `%LOCALAPPDATA%\campus-login\campus-login.log` に出力されます。
+
+> 既にタスクを登録済みの場合も、`setup-task.ps1` を再実行すると定期チェック付きで上書き登録されます。
 
 **PowerShell から登録する（管理者権限不要）**
 

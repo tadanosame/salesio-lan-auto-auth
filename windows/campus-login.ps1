@@ -5,6 +5,10 @@ $LoginUrl = "http://172.30.0.1/login.html"
 $UserField = "uid"
 $PassField = "pwd"
 
+# インターネット疎通判定用 URL（Windows の NCSI と同じもの）
+$ProbeUrl     = "http://www.msftconnecttest.com/connecttest.txt"
+$ProbeContent = "Microsoft Connect Test"
+
 # .env ファイルから認証情報を読み込む（スクリプトと同階層 → 親ディレクトリの順で探す）
 $EnvFile = Join-Path $PSScriptRoot ".env"
 if (-not (Test-Path $EnvFile)) {
@@ -17,11 +21,46 @@ if (Test-Path $EnvFile) {
     }
 }
 
-try {
-    # セッション取得
-    $session = $null
-    $page = Invoke-WebRequest -Uri $LoginUrl -SessionVariable session -UseBasicParsing -TimeoutSec 10
+# ログ（タスクスケジューラからは非表示で動くため、ファイルにも残す）
+$LogDir  = Join-Path $env:LOCALAPPDATA "campus-login"
+$LogFile = Join-Path $LogDir "campus-login.log"
+function Write-Log([string]$Message, [string]$Color = "White") {
+    Write-Host $Message -ForegroundColor $Color
+    try {
+        if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir -Force | Out-Null }
+        "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') $Message" | Out-File $LogFile -Append -Encoding UTF8
+        if ((Get-Item $LogFile).Length -gt 1MB) { Move-Item $LogFile "$LogFile.old" -Force }
+    } catch {}
+}
 
+# 認証ポータルに横取りされずにインターネットへ出られるかを HTTP で判定
+# （ping は認証切れでも通ることがあるため使わない）
+function Test-Online {
+    try {
+        $r = Invoke-WebRequest -Uri $ProbeUrl -UseBasicParsing -TimeoutSec 5 -MaximumRedirection 0 -ErrorAction Stop
+        $content = $r.Content
+        if ($content -is [byte[]]) { $content = [Text.Encoding]::ASCII.GetString($content) }
+        return ($r.StatusCode -eq 200 -and "$content".Trim() -eq $ProbeContent)
+    } catch {
+        return $false
+    }
+}
+
+# 既にオンラインなら何もしない（定期実行のたびにログインしないため）
+if (Test-Online) { exit 0 }
+
+# 認証ページ取得。届かなければ学内LANではないので静かに終了
+try {
+    $session = $null
+    $page = Invoke-WebRequest -Uri $LoginUrl -SessionVariable session -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
+} catch {
+    Write-Host "認証サーバーに接続できません（学内LAN外）。終了します。" -ForegroundColor Gray
+    exit 0
+}
+
+Write-Log "オフラインを検知。再認証します。" "Cyan"
+
+try {
     # Regex でフォームの action を取得
     $actionMatch = [regex]::Match($page.Content, '<form[^>]+action="([^"]*)"', 'IgnoreCase')
     $actionPath = if ($actionMatch.Success) { $actionMatch.Groups[1].Value } else { "" }
@@ -57,17 +96,17 @@ try {
 
     # レスポンスボディでログインページが返ってきたか確認
     if ($result.Content -match 'action="[^"]*loginprocess|type="password"') {
-        Write-Host "認証失敗: ユーザーIDまたはパスワードが違います（HTTP $($result.StatusCode)）" -ForegroundColor Red
+        Write-Log "認証失敗: ユーザーIDまたはパスワードが違います（HTTP $($result.StatusCode)）" "Red"
         exit 1
     }
 
-    Write-Host "認証成功（HTTP $($result.StatusCode)）" -ForegroundColor Green
+    Write-Log "認証成功（HTTP $($result.StatusCode)）" "Green"
 
     # インターネット疎通確認（最大90秒リトライ）
     Write-Host "疎通確認中..." -ForegroundColor Cyan
     $connected = $false
     for ($i = 1; $i -le 9; $i++) {
-        if (Test-Connection -ComputerName "8.8.8.8" -Count 1 -Quiet) {
+        if (Test-Online) {
             $connected = $true
             break
         }
@@ -75,12 +114,12 @@ try {
         Start-Sleep -Seconds 10
     }
     if ($connected) {
-        Write-Host "インターネット接続OK" -ForegroundColor Green
+        Write-Log "インターネット接続OK" "Green"
     } else {
-        Write-Host "90秒待っても疎通なし。手動で確認してください。" -ForegroundColor Yellow
+        Write-Log "90秒待っても疎通なし。手動で確認してください。" "Yellow"
     }
 
 } catch {
-    Write-Host "エラー: $_" -ForegroundColor Red
+    Write-Log "エラー: $_" "Red"
     exit 1
 }
