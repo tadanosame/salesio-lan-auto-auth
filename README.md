@@ -1,43 +1,54 @@
 # 学内ネットワーク自動認証スクリプト
 
 サレジオ高専のネットワーク認証ポータル（`http://172.30.0.1/`）に自動ログインするスクリプトです。  
-Windows（PowerShell）と Mac / Linux（bash）に対応しています。
+Windows・Mac・Linux に対応しています。
 
-## かんたんセットアップ（Windows）
+## かんたんセットアップ
 
-**`setup.bat` をダブルクリックするだけで設定が完了します。**
+**セットアップ用のファイルを1つ実行して、ユーザーID とパスワードを入力するだけで設定が完了します。**
+
+### Windows
 
 1. このリポジトリを好きな場所に置く（`git clone` または ZIP を展開）
-2. `setup.bat` をダブルクリック
+2. **`setup.bat` をダブルクリック**
 3. 聞かれたら **ユーザーID（学籍番号）** と **パスワード** を入力
 
-これだけで、以下がすべて自動で行われます。
+### Mac / Linux
+
+1. このリポジトリを好きな場所に置く（`git clone` または ZIP を展開）
+2. ターミナルでフォルダに移動して **`./setup.sh` を実行**
+3. 聞かれたら **ユーザーID（学籍番号）** と **パスワード** を入力
+
+```bash
+cd salesio-lan-auto-auth
+./setup.sh
+```
+
+> Mac では、`書類`・`デスクトップ`・`ダウンロード` フォルダの中に置くと、macOS のプライバシー保護で自動実行が失敗することがあります。`~/salesio-lan-auto-auth` などホーム直下に置くのがおすすめです。
+
+### セットアップで行われること
 
 - 認証情報ファイル `.env` の作成
-- 自動実行タスクの登録（ログオン時・Wi-Fi 再接続時・5分ごと）
+- 自動実行の登録（Windows: タスクスケジューラ / Mac: launchd / Linux: systemd ユーザータイマー、なければ cron）
 - その場で1回実行して動作確認
 
-以降は何もしなくても、バックグラウンドで自動ログイン・再ログインします（ウィンドウは表示されません）。
+以降は何もしなくても、バックグラウンドで自動ログイン・再ログインします（ウィンドウは表示されません）。管理者権限（sudo）は不要です。
 
-| やりたいこと | 方法 |
-|---|---|
-| パスワードを変えた | `setup.bat` をもう一度実行（「この設定を使いますか？」で `n`） |
-| フォルダを移動した・スクリプトを更新した | `setup.bat` をもう一度実行（`Enter` で既存の設定を使用） |
-| 自動ログインをやめる | `uninstall.bat` をダブルクリック |
-| ログを見る | `%LOCALAPPDATA%\campus-login\campus-login.log` |
-
-> 管理者権限は不要です。Mac の場合は [Mac：自動実行の設定](#mac自動実行の設定) を参照してください。
+| やりたいこと | Windows | Mac / Linux |
+|---|---|---|
+| パスワードを変えた | `setup.bat` を再実行（「この設定を使いますか？」で `n`） | `./setup.sh` を再実行（同じく `n`） |
+| フォルダを移動した・更新した | `setup.bat` を再実行（`Enter` で既存の設定を使用） | `./setup.sh` を再実行（同じく `Enter`） |
+| 自動ログインをやめる | `uninstall.bat` をダブルクリック | `./uninstall.sh` |
+| ログを見る | `%LOCALAPPDATA%\campus-login\campus-login.log` | [ログ](#ログ) を参照 |
 
 ## 機能
 
-| 機能 | Windows | Mac / Linux |
-|---|:---:|:---:|
-| 自動ログイン（ログオン時・ネットワーク接続時） | ✅ | ✅ |
-| 認証切れの定期チェック（5分ごと）→ 自動で再ログイン | ✅ | — |
-| 再ログイン前のログアウト（セッションが残って弾かれるのを防ぐ） | ✅ | — |
-| 一定時間ごとの先回り再ログイン（既定 11 時間） | ✅ | — |
-| ウィンドウを出さずにバックグラウンド実行 | ✅ | ✅ |
-| ログファイル出力 | ✅ | ✅ |
+- **自動ログイン:** ログイン時・ネットワーク接続時・5分ごとにチェックし、オフラインなら自動でログイン
+- **認証切れからの自動復帰:** Wi-Fi はつながったまま認証だけ切れた場合も、5分以内に検知して再ログイン
+- **ログアウト → 再ログイン:** セッションが残って再ログインが弾かれるのを防ぐため、先にログアウトする
+- **先回り再ログイン:** 前回ログインから一定時間（既定 11 時間）たったら、切れる前にログインし直す
+- **バックグラウンド実行:** ウィンドウを出さずに動く
+- **ログ出力:** 認証切れまでの経過時間も記録する
 
 ## ファイル構成
 
@@ -45,26 +56,23 @@ Windows（PowerShell）と Mac / Linux（bash）に対応しています。
 .
 ├── setup.bat                    # Windows：ワンクリックセットアップ
 ├── uninstall.bat                # Windows：自動実行の解除
+├── setup.sh                     # Mac / Linux：セットアップ（--uninstall で解除）
+├── uninstall.sh                 # Mac / Linux：自動実行の解除
 ├── windows/
 │   ├── campus-login.ps1         # 自動ログイン本体
 │   ├── check-login-form.ps1     # フォームフィールド確認
 │   ├── setup-task.ps1           # セットアップ本体（setup.bat / uninstall.bat から呼ばれる）
 │   └── run-hidden.js            # ウィンドウを出さずに起動するランチャー（タスクから使用）
-├── mac/
-│   ├── campus-login.sh          # 自動ログイン
-│   ├── check-login-form.sh      # フォームフィールド確認
-│   └── com.campus.login.plist   # 自動実行用 LaunchAgent サンプル
+├── mac/                         # Mac / Linux 共通
+│   ├── campus-login.sh          # 自動ログイン本体
+│   └── check-login-form.sh      # フォームフィールド確認
 ├── .env.example                 # 設定ファイルのサンプル
-└── .env                         # 設定ファイル（非公開・gitignore 済み）
+└── .env                         # 設定ファイル（setup で自動作成・gitignore 済み）
 ```
 
 ## 設定ファイル `.env`
 
-Windows では `setup.bat` が自動で作成します。手動で作る場合（Mac など）は `.env.example` をコピーして編集します。
-
-```bash
-cp .env.example .env
-```
+`setup.bat` / `setup.sh` が自動で作成します。手動で作る場合は `.env.example` をコピーして編集します。
 
 ```
 STUDENT_ID=your_student_id
@@ -77,37 +85,25 @@ RELOGIN_HOURS=11
 |---|:---:|---|
 | `STUDENT_ID` | ✅ | ユーザーID（学籍番号） |
 | `PASSWORD` | ✅ | パスワード |
-| `RELOGIN_HOURS` | — | 先回り再ログインまでの時間（時間単位）。`0` で無効。既定 `11`。Windows のみ |
+| `RELOGIN_HOURS` | — | 先回り再ログインまでの時間（時間単位）。`0` で無効。既定 `11` |
 
-`.env` はリポジトリのルートに置けば、Windows・Mac どちらのスクリプトからも読み込まれます。
+`.env` はリポジトリのルートに置けば、Windows・Mac・Linux どのスクリプトからも読み込まれます。
 
 ---
 
-## Windows：自動実行の詳細
-
-通常は [かんたんセットアップ](#かんたんセットアップwindows) の `setup.bat` だけで十分です。ここでは仕組みを説明します。
-
-### 登録・解除（コマンドで行う場合）
-
-```powershell
-# セットアップ（setup.bat と同じ）
-powershell -ExecutionPolicy Bypass -File .\windows\setup-task.ps1
-# 解除（uninstall.bat と同じ）
-powershell -ExecutionPolicy Bypass -File .\windows\setup-task.ps1 -Uninstall
-```
-
-タスク名 `campus-login` でタスクスケジューラに登録されます（再実行すると上書き）。
+## 仕組み
 
 ### 実行タイミング
 
-| トリガー | タイミング |
-|---|---|
-| ログオン時 | Windows にサインインしたとき |
-| ネットワーク接続時 | Wi-Fi が切れて再接続したとき（10秒後） |
-| 定期チェック | 5分ごと（Wi-Fi はつながったまま認証だけ切れた場合に対応） |
+| タイミング | Windows（タスクスケジューラ） | Mac（launchd） | Linux（systemd） | Linux（cron） |
+|---|:---:|:---:|:---:|:---:|
+| ログイン時 | ✅ | ✅ | ✅（30秒後） | ✅（起動時） |
+| ネットワーク接続・切替時 | ✅（10秒後） | ✅ | — | — |
+| 5分ごとの定期チェック | ✅ | ✅ | ✅ | ✅ |
 
-タスクは `wscript.exe` で `run-hidden.js` を起動し、そこから PowerShell を非表示で実行します。  
-（`powershell.exe` を直接起動すると、実行のたびに一瞬ウィンドウが表示されるため）
+- **Windows:** タスク名 `campus-login`。`wscript.exe` で `run-hidden.js` を起動し、そこから PowerShell を非表示で実行します（`powershell.exe` を直接起動すると、一瞬ウィンドウが表示されるため）。
+- **Mac:** `~/Library/LaunchAgents/com.campus.login.plist` に登録されます。
+- **Linux:** systemd のユーザーセッションが使えれば `~/.config/systemd/user/campus-login.timer` に、使えなければ crontab に登録されます。systemd の場合、ログアウト中も動かすには `loginctl enable-linger $USER` が必要です。
 
 ### 動作の流れ
 
@@ -130,10 +126,25 @@ powershell -ExecutionPolicy Bypass -File .\windows\setup-task.ps1 -Uninstall
 
 ### ログ
 
-| ファイル | 内容 |
+| OS | ログファイル |
 |---|---|
-| `%LOCALAPPDATA%\campus-login\campus-login.log` | 実行ログ（1MB を超えると `.old` に退避） |
-| `%LOCALAPPDATA%\campus-login\last-login.txt` | 最後にログインした時刻 |
+| Windows | `%LOCALAPPDATA%\campus-login\campus-login.log` |
+| Mac | `~/Library/Logs/campus-login/campus-login.log` |
+| Linux | `~/.local/state/campus-login/campus-login.log` |
+
+同じフォルダに、最後にログインした時刻（`last-login.txt` / `last-login`）も保存されます。ログは 1MB を超えると `.old` に退避されます。
+
+```powershell
+# Windows
+Get-Content "$env:LOCALAPPDATA\campus-login\campus-login.log" -Tail 20
+```
+
+```bash
+# Mac
+tail -n 20 ~/Library/Logs/campus-login/campus-login.log
+# Linux
+tail -n 20 ~/.local/state/campus-login/campus-login.log
+```
 
 オンラインで何もしなかった回はログに残りません。主なメッセージ:
 
@@ -145,11 +156,6 @@ powershell -ExecutionPolicy Bypass -File .\windows\setup-task.ps1 -Uninstall
 | `認証成功` / `インターネット接続OK` | 再ログイン完了 |
 | `認証失敗: ログインページが返されました` | ID・パスワードの誤り、またはフォームの変更 |
 
-```powershell
-# ログを確認
-Get-Content "$env:LOCALAPPDATA\campus-login\campus-login.log" -Tail 20
-```
-
 > **セッションの有効時間について**  
 > 何時間で認証が切れるかは確認できていません（約12時間と想定）。わからなくても、5分ごとのチェックで切れたことを検知して自動で再ログインします。  
 > ログの「前回ログインから ○時間○分」で実際の時間がわかったら、`RELOGIN_HOURS` をそれより少し短くすると、通信が止まる時間をほぼなくせます。
@@ -157,73 +163,47 @@ Get-Content "$env:LOCALAPPDATA\campus-login\campus-login.log" -Tail 20
 ### 手動実行
 
 ```powershell
-# 通常（オフラインなら再ログイン）
-powershell -ExecutionPolicy Bypass -File .\windows\campus-login.ps1
-# 状態に関係なくログアウト → 再ログイン
-powershell -ExecutionPolicy Bypass -File .\windows\campus-login.ps1 -Relogin
-# ログアウトのみ
-powershell -ExecutionPolicy Bypass -File .\windows\campus-login.ps1 -Logout
+# Windows
+powershell -ExecutionPolicy Bypass -File .\windows\campus-login.ps1            # 通常（オフラインなら再ログイン）
+powershell -ExecutionPolicy Bypass -File .\windows\campus-login.ps1 -Relogin   # 状態に関係なくログアウト → 再ログイン
+powershell -ExecutionPolicy Bypass -File .\windows\campus-login.ps1 -Logout    # ログアウトのみ
+```
+
+```bash
+# Mac / Linux
+./mac/campus-login.sh             # 通常（オフラインなら再ログイン）
+./mac/campus-login.sh --relogin   # 状態に関係なくログアウト → 再ログイン
+./mac/campus-login.sh --logout    # ログアウトのみ
 ```
 
 ### 登録確認
 
 ```powershell
-# 登録内容の確認
-schtasks /Query /TN "campus-login" /FO LIST
-# どのフォルダのスクリプトを実行しているか確認
+# Windows：どのフォルダのスクリプトを実行しているか
 (Get-ScheduledTask -TaskName "campus-login").Actions | Format-List Execute, Arguments
 ```
 
----
-
-## Mac：自動実行の設定
-
-ネットワーク設定が切り替わるタイミング（キャンパス Wi-Fi 接続時など）とログイン時に自動実行します。  
-※ Windows 版にある「5分ごとの定期チェック」「ログアウト → 再ログイン」「先回り再ログイン」は未対応です。
-
-**1. 実行権限を付与する**
-
 ```bash
-chmod +x mac/campus-login.sh mac/check-login-form.sh
-```
-
-**2. plist ファイルを編集する**
-
-`mac/com.campus.login.plist` を開き、スクリプトの絶対パスを書き換えます。
-
-```xml
-<string>/Users/YOUR_USERNAME/path/to/mac/campus-login.sh</string>
-```
-
-**3. LaunchAgents にコピーして登録する**
-
-```bash
-cp mac/com.campus.login.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.campus.login.plist
-```
-
-**4. 動作確認**
-
-```bash
-tail -f /tmp/campus-login.log
-```
-
-**手動実行**
-
-```bash
-./mac/campus-login.sh
-```
-
-**解除する場合**
-
-```bash
-launchctl unload ~/Library/LaunchAgents/com.campus.login.plist
-rm ~/Library/LaunchAgents/com.campus.login.plist
+# Mac
+launchctl list | grep com.campus.login
+# Linux（systemd）
+systemctl --user list-timers campus-login.timer
+# Linux（cron）
+crontab -l | grep campus-login
 ```
 
 ---
 
 ## トラブルシューティング
+
+### うまく動かないとき
+
+- `認証失敗` がログに出る → セットアップを再実行して ID・パスワードを入れ直す
+- ログに何も出ない → オンラインのままなら正常です。登録されているかは [登録確認](#登録確認) のコマンドで確認する
+- フォルダを移動した → セットアップを再実行する（自動実行は登録時のパスを指しているため）
+- `setup.bat` の画面がすぐ閉じる・文字化けする → PowerShell から `powershell -ExecutionPolicy Bypass -File .\windows\setup-task.ps1` を直接実行する
+- `./setup.sh` で `Permission denied` → `bash setup.sh` で実行する
+- Mac で自動実行だけ動かない → フォルダを `書類`・`デスクトップ`・`ダウンロード` の外に移動してセットアップを再実行する。`~/Library/Logs/campus-login/launchd.log` にエラーが出ていないかも確認する
 
 ### 認証ポータルの仕様
 
@@ -243,19 +223,12 @@ rm ~/Library/LaunchAgents/com.campus.login.plist
 ```bash
 # Windows（PowerShell）
 powershell -ExecutionPolicy Bypass -File .\windows\check-login-form.ps1
-# Mac
+# Mac / Linux
 ./mac/check-login-form.sh
 ```
 
-### うまく動かないとき
-
-- `認証失敗` がログに出る → `setup.bat` を再実行して ID・パスワードを入れ直す
-- ログに何も出ない → オンラインのままなら正常です。タスクが登録されているかは「登録確認」のコマンドで確認する
-- フォルダを移動した → `setup.bat` を再実行する（タスクは登録時のパスを指しているため）
-- `setup.bat` の画面がすぐ閉じる・文字化けする → PowerShell から `powershell -ExecutionPolicy Bypass -File .\windows\setup-task.ps1` を直接実行する
-
 ## 注意事項
 
-- `.env` ファイルは絶対にコミットしないでください（`.gitignore` で除外済み）
+- `.env` ファイルは絶対にコミットしないでください（`.gitignore` で除外済み。Mac / Linux では権限 600 で作成）
 - このスクリプトはサレジオ高専の学内LANに接続しているときだけ動作します
 - ログイン情報の取り扱いは各自の責任で行ってください
