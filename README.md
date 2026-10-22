@@ -14,6 +14,7 @@ Mac / Linux（bash）と Windows（PowerShell）に対応しています。
 ├── windows/
 │   ├── campus-login.ps1         # 自動ログイン
 │   ├── check-login-form.ps1     # フォームフィールド確認
+│   ├── run-hidden.js            # ウィンドウを出さずに起動するランチャー
 │   └── setup-task.ps1           # タスクスケジューラ登録スクリプト
 ├── .env.example                 # 認証情報のサンプル
 └── .env                         # 認証情報（非公開・gitignore済み）
@@ -119,7 +120,22 @@ rm ~/Library/LaunchAgents/com.campus.login.plist
 
 定期チェックでは、まず `http://www.msftconnecttest.com/connecttest.txt` に HTTP でアクセスして、インターネットに出られるかを判定します。出られる場合は何もせず終了します。学内LAN外（認証サーバーに届かない）の場合も何もしません。
 
+オフラインを検知したときは、**ログアウト → 再ログイン**の順で実行します（セッションが残ったままだと再ログインできないため）。
+
+また、このスクリプトでログインしてから **11時間** たつと、通信が切れる前に先回りしてログアウト→再ログインします（約12時間でセッションが切れるため）。時間は `.env` の `RELOGIN_HOURS` で変えられます（`0` で無効）。
+
 実行ログは `%LOCALAPPDATA%\campus-login\campus-login.log` に出力されます。
+
+タスクは `windows/run-hidden.js` を `wscript.exe` で起動し、そこから PowerShell を非表示で実行します（`powershell.exe` を直接起動すると、実行のたびに一瞬ウィンドウが表示されるため）。
+
+手動で実行する場合:
+
+```powershell
+# 状態に関係なくログアウト→再ログイン
+powershell -ExecutionPolicy Bypass -File .\windows\campus-login.ps1 -Relogin
+# ログアウトのみ
+powershell -ExecutionPolicy Bypass -File .\windows\campus-login.ps1 -Logout
+```
 
 > 既にタスクを登録済みの場合も、`setup-task.ps1` を再実行すると定期チェック付きで上書き登録されます。
 

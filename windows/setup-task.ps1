@@ -3,6 +3,9 @@
 $scriptPath = Join-Path $PSScriptRoot "campus-login.ps1"
 $scriptPath = (Resolve-Path $scriptPath).Path
 
+# ウィンドウを出さずに起動するためのランチャー（wscript.exe 経由）
+$launcherPath = (Resolve-Path (Join-Path $PSScriptRoot "run-hidden.js")).Path
+
 # 認証切れチェックの間隔（分）
 $IntervalMinutes = 5
 $startBoundary = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss")
@@ -45,8 +48,8 @@ $xml = @"
   </Settings>
   <Actions>
     <Exec>
-      <Command>powershell.exe</Command>
-      <Arguments>-ExecutionPolicy Bypass -WindowStyle Hidden -File "$scriptPath"</Arguments>
+      <Command>wscript.exe</Command>
+      <Arguments>//B //Nologo //E:JScript "$launcherPath"</Arguments>
     </Exec>
   </Actions>
 </Task>
